@@ -46,7 +46,7 @@ $skin-brief-breadcrumb-height: 50px;
 
     &_userinfo {
       float: right;
-      padding: ($skin-brief-header-height - 35) *0.5 15px;
+      padding: ($skin-brief-header-height - 35) * 0.5 15px;
       height: 100%;
       box-sizing: border-box;
 
@@ -69,7 +69,7 @@ $skin-brief-breadcrumb-height: 50px;
         height: 100%;
 
         #{$prefix}-icon {
-          margin-top: ($skin-brief-header-height - $skin-brief-toolbar-icon-font-size) *0.5;
+          margin-top: ($skin-brief-header-height - $skin-brief-toolbar-icon-font-size) * 0.5;
           font-size: $skin-brief-toolbar-icon-font-size;
           cursor: pointer;
           color: #ddd;
@@ -83,7 +83,6 @@ $skin-brief-breadcrumb-height: 50px;
   }
 
   #{$prefix}-header_userinfo_dropdown {
-    padding: 0;
     width: 140px;
 
     .el-dropdown-menu__item {
@@ -93,11 +92,11 @@ $skin-brief-breadcrumb-height: 50px;
 
       &:focus,
       &:not(.is-disabled):hover {
-        color: #4361ee;
+        color: #409eff;
         background-color: rgba(0, 0, 0, 0.04);
 
         #{$prefix}-icon {
-          color: #4361ee;
+          color: #409eff;
         }
       }
 
@@ -107,7 +106,6 @@ $skin-brief-breadcrumb-height: 50px;
 
       #{$prefix}-icon {
         position: relative;
-        top: 2px;
         margin-right: 5px;
         color: #3b3f5c;
         font-size: 20px;
@@ -119,7 +117,7 @@ $skin-brief-breadcrumb-height: 50px;
   #{$prefix}-sub-header {
     flex-shrink: 0;
     position: relative;
-    padding-left: 80px;
+    padding: 0 80px;
     height: $skin-brief-breadcrumb-height;
     box-shadow: 0px 20px 20px rgb(126 142 177 / 12%);
     background: #fafafa;
@@ -141,6 +139,20 @@ $skin-brief-breadcrumb-height: 50px;
     .el-breadcrumb {
       height: $skin-brief-breadcrumb-height;
       line-height: $skin-brief-breadcrumb-height;
+    }
+
+    #{$prefix}-back {
+      position: absolute;
+      right: 20px;
+      top: 10px;
+
+      a {
+        line-height: 2;
+      }
+
+      #{$prefix}-icon {
+        margin-right: 2px;
+      }
     }
   }
 
@@ -174,18 +186,12 @@ $skin-brief-breadcrumb-height: 50px;
     transition: all 0.3s ease-in;
 
     &.is-collapse {
-      width: 100px;
-    }
-
-    &_wrapper {
-      padding: 0 15px;
+      width: 65px;
     }
 
     &_item {
       &_icon {
         position: relative;
-        top: 2px;
-        margin-right: 10px;
         font-size: 20px;
         color: #506690;
       }
@@ -199,7 +205,7 @@ $skin-brief-breadcrumb-height: 50px;
         width: auto;
 
         .el-menu-item,
-        .el-submenu__title {
+        .el-sub-menu__title {
           text-align: center;
 
           #{$prefix}-icon {
@@ -210,7 +216,7 @@ $skin-brief-breadcrumb-height: 50px;
     }
 
     .el-menu-item,
-    .el-submenu__title {
+    .el-sub-menu__title {
       margin-bottom: 4px;
       height: 45px;
       line-height: 45px;
@@ -218,7 +224,7 @@ $skin-brief-breadcrumb-height: 50px;
     }
 
     .el-menu-item:hover,
-    .el-submenu__title:hover {
+    .el-sub-menu__title:hover {
       background: #bfc9d4;
       box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
       border-radius: 6px;
@@ -230,14 +236,14 @@ $skin-brief-breadcrumb-height: 50px;
     }
 
     .el-menu-item.is-active,
-    .el-submenu.is-active > .el-submenu__title {
+    .el-sub-menu.is-active > .el-sub-menu__title {
       background: #fff;
       box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
       border-radius: 6px;
       color: #0e1726;
     }
 
-    .el-submenu .el-menu-item {
+    .el-sub-menu .el-menu-item {
       background: none;
       box-shadow: none;
 

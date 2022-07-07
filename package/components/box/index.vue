@@ -3,7 +3,7 @@
     v-loading="loading"
     :class="class_"
     :style="{ height }"
-    :element-loading-text="loadingText || $t('mkh.dialog.loadingText')"
+    :element-loading-text="loadingText || $t('mkh.loading_text')"
     :element-loading-background="loadingBackground || loadingOptions.background"
     :element-loading-spinner="loadingSpinner || loadingOptions.spinner"
   >
@@ -38,18 +38,16 @@
 </template>
 <script>
 import { computed, ref } from 'vue'
-import { useStore } from 'vuex'
-import { useCollapse, useFullscreen } from '../../composables'
+import { useCollapse, useFullscreen, useSize } from '../../composables'
 import props from './props'
 export default {
-  name: 'Box',
   props,
   emits: ['fullscreen-change', 'collapse-change'],
   setup(props, { emit }) {
-    const store = useStore()
+    const { store } = mkh
     const scrollbarRef = ref()
-    const loadingOptions = mkh.config.component.loading
-    const size_ = computed(() => props.size || store.state.app.profile.skin.size)
+    const loadingOptions = store.state.app.config.component.loading
+    const { size: size_ } = useSize(props)
 
     const { isFullscreen, openFullscreen, closeFullscreen, toggleFullscreen } = useFullscreen(emit)
 

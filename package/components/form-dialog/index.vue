@@ -2,28 +2,62 @@
   <m-dialog
     ref="dialogRef"
     v-model="visible"
-    custom-class="m-form-dialog"
+    :header="header"
+    :title="title"
+    :icon="icon"
+    :icon-color="iconColor"
+    :no-padding="noPadding"
+    :no-scrollbar="noScrollbar"
+    :custom-class="customClass_"
     :size="size"
-    :loading="loading"
+    :width="width"
+    :height="height"
+    :top="top"
+    :show-close="showClose"
+    :show-fullscreen="showFullscreen"
+    :modal="modal"
+    :append-to-body="appendToBody"
+    :draggable="draggable"
+    :lock-scroll="lockScroll"
+    :open-delay="openDelay"
+    :close-delay="closeDelay"
+    :close-on-click-modal="closeOnClickModal"
+    :close-on-press-escape="closeOnPressEscape"
+    :before-close="beforeClose"
+    :destroy-on-close="destroyOnClose"
+    :loading="loading || loading_"
     :loading-text="loadingText"
     :loading-background="loadingBackground"
     :loading-spinner="loadingSpinner"
+    @open="handleOpen"
     @opened="handleOpened"
+    @close="handleClose"
     @closed="handleClosed"
+    @open-auto-focus="handleOpenAutoFocus"
+    @close-auto-focus="handleCloseAutoFocus"
   >
     <m-form
       ref="formRef"
       no-loading
-      :style="{ marginRight: formMarginRight }"
+      :size="size"
       :action="action"
       :model="model"
       :rules="rules"
-      :size="size"
-      :custom-validate="customValidate"
-      :disabled="disabled"
+      :inline="inline"
       :label-width="labelWidth"
+      :label-position="labelPosition"
+      :label-suffix="labelSuffix"
+      :hide-required-asterisk="hideRequiredAsterisk"
+      :show-message="showMessage"
+      :inline-message="inlineMessage"
+      :status-icon="statusIcon"
+      :validate-on-rule-change="validateOnRuleChange"
+      :disabled="disabled"
+      :custom-validate="customValidate"
       :before-submit="beforeSubmit"
-      @validate-success="loading = true"
+      :disabled-enter="disabledEnter"
+      @validate-success="handleValidateSuccess"
+      @validate-error="handleValidateError"
       @success="handleSuccess"
       @error="handleError"
     >
@@ -32,26 +66,37 @@
 
     <template v-if="footer" #footer>
       <slot name="footer"> </slot>
-      <m-button v-if="btnOk" type="success" :icon="btnOkIcon" :text="btnOkText || $t('mkh.form.btnOkText')" :disabled="disabled" @click="submit"></m-button>
-      <m-button v-if="btnReset" type="info" :icon="btnResetIcon" :text="$t('mkh.form.btnResetText')" :disabled="disabled" @click="reset"></m-button>
+      <m-button v-if="btnOk" type="success" :icon="btnOkIcon" :disabled="disabled" @click="submit">{{ btnOkText || $t('mkh.save') }}</m-button>
+      <m-button v-if="btnReset" type="info" :icon="btnResetIcon" :disabled="disabled" @click="reset">{{ $t('mkh.reset') }}</m-button>
     </template>
   </m-dialog>
 </template>
 <script>
-import { getCurrentInstance, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useVisible, useMessage } from '../../composables'
 import { fullscreenMixins } from '../../composables/fullscreen'
+import _ from 'lodash'
 import props from './props'
 export default {
-  name: 'FormDialog',
+  inheritAttrs: false,
   props,
-  emits: ['update:modelValue', 'success', 'error', 'closed', 'opened', 'reset'],
+  emits: ['update:modelValue', 'open', 'opened', 'close', 'closed', 'open-auto-focus', 'close-auto-focus', 'success', 'error', 'reset', 'validate-success', 'validate-error'],
   setup(props, { emit }) {
-    const cit = getCurrentInstance().proxy
+    const { $t } = mkh
     const message = useMessage()
     const dialogRef = ref(null)
     const formRef = ref(null)
-    const loading = ref(false)
+    const loading_ = ref(false)
+
+    const customClass_ = computed(() => {
+      let list = ['m-form-dialog']
+      if (props.customClass) {
+        list.push(props.customClass)
+      }
+      return list.join(' ')
+    })
+
+    const model_ = _.cloneDeep(props.model)
 
     const { visible, open, close } = useVisible(props, emit)
 
@@ -61,6 +106,7 @@ export default {
 
     const reset = () => {
       formRef.value.reset()
+      if (props.autoFocusRef) props.autoFocusRef.focus()
       emit('reset')
     }
 
@@ -69,8 +115,8 @@ export default {
     }
 
     const handleSuccess = data => {
-      loading.value = false
-      message.success(cit.$t('mkh.form.successMsg'))
+      loading_.value = false
+      message.success(props.successMessage || $t('mkh.save_success_msg'))
 
       if (props.closeOnSuccess) {
         visible.value = false
@@ -80,8 +126,12 @@ export default {
     }
 
     const handleError = () => {
-      loading.value = false
+      loading_.value = false
       emit('error')
+    }
+
+    const handleOpen = () => {
+      emit('open')
     }
 
     const handleOpened = () => {
@@ -90,11 +140,32 @@ export default {
       emit('opened')
     }
 
+    const handleClose = () => {
+      emit('close')
+    }
+
     const handleClosed = () => {
       if (props.resetOnClosed) {
-        formRef.value.reset()
+        Object.assign(props.model, model_)
       }
       emit('closed')
+    }
+
+    const handleOpenAutoFocus = () => {
+      emit('open-auto-focus')
+    }
+
+    const handleCloseAutoFocus = () => {
+      emit('close-auto-focus')
+    }
+
+    const handleValidateSuccess = () => {
+      loading_.value = true
+      emit('validate-success')
+    }
+
+    const handleValidateError = () => {
+      emit('validate-error')
     }
 
     return {
@@ -104,14 +175,24 @@ export default {
       close,
       dialogRef,
       formRef,
-      loading,
+      loading_,
+      customClass_,
       submit,
       reset,
       resize,
       handleSuccess,
       handleError,
+      handleOpen,
       handleOpened,
+      handleClose,
       handleClosed,
+      handleOpenAutoFocus,
+      handleCloseAutoFocus,
+      handleValidateSuccess,
+      handleValidateError,
+      validateField: (props, callback) => formRef.value.validateField(props, callback),
+      scrollToField: prop => formRef.value.scrollToField(prop),
+      clearValidate: props => formRef.value.clearValidate(props),
     }
   },
 }

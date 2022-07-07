@@ -1,11 +1,12 @@
 <template>
-  <m-button class="m-button-add" :type="type" :icon="icon" :text="text || $t('mkh.add.text')">
-    <slot />
+  <m-button class="m-button-add" :type="type" :icon="icon">
+    <slot>
+      {{ $t('mkh.add') }}
+    </slot>
   </m-button>
 </template>
 <script>
 export default {
-  name: 'ButtonAdd',
   props: {
     /** 类型 primary/success/warning/danger/info/text */
     type: {
@@ -16,11 +17,6 @@ export default {
     icon: {
       type: String,
       default: 'plus',
-    },
-    /** 文本 */
-    text: {
-      type: String,
-      default: '',
     },
   },
 }

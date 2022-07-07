@@ -8,6 +8,7 @@
   line-height: 50px;
   background-color: #f8f8f8;
   border-bottom: 1px solid $border-color-3;
+  color: #303133;
 
   &_icon {
     flex-shrink: 0;
@@ -16,6 +17,7 @@
     text-align: center;
 
     #{$prefix}-icon {
+      height: 100%;
       font-size: 20px;
     }
   }
@@ -48,6 +50,7 @@
 
       &:hover {
         color: $text-color-1;
+        background-color: transparent !important;
         transform: scale(1.2);
       }
 

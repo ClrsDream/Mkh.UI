@@ -6,8 +6,8 @@ import Error500 from '../pages/500/index.vue'
 
 export default [
   {
-    path: '/default',
-    name: 'default',
+    path: '/',
+    name: 'home',
     component: defaultPage,
     meta: {
       inFrame: true,
@@ -20,9 +20,9 @@ export default [
     name: 'login',
     component: Login,
     meta: {
-      title: '登录',
       cache: false,
       inFrame: false,
+      enablePermissionVerify: false,
     },
   },
   {
@@ -33,7 +33,8 @@ export default [
     meta: {
       title: 'Error 403',
       cache: false,
-      inFrame: true,
+      inFrame: false,
+      enablePermissionVerify: false,
     },
   },
   {
@@ -44,7 +45,8 @@ export default [
     meta: {
       title: 'Error 404',
       cache: false,
-      inFrame: true,
+      inFrame: false,
+      enablePermissionVerify: false,
     },
   },
   {
@@ -55,6 +57,8 @@ export default [
     meta: {
       title: 'Error 500',
       cache: false,
+      inFrame: false,
+      enablePermissionVerify: false,
     },
   },
   { path: '/:pathMatch(.*)*', redirect: '/error/404' },

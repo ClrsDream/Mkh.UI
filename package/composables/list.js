@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { ref } from 'vue'
 
 export default function () {
   //列表组件引用
@@ -35,6 +35,11 @@ export default function () {
     if (listRef.value) listRef.value.refresh()
   }
 
+  //重置
+  const reset = () => {
+    if (listRef.value) listRef.value.reset()
+  }
+
   return {
     listRef,
     selection,
@@ -44,13 +49,16 @@ export default function () {
     edit,
     view,
     refresh,
+    reset,
   }
 }
 
 //基类实体的列信息
-export const entityBaseCols = [
-  { prop: 'creator', label: '创建人', width: 80 },
-  { prop: 'createdTime', label: '创建时间', width: 150 },
-  { prop: 'modifier', label: '修改人', width: 80, show: false },
-  { prop: 'modifiedTime', label: '修改时间', width: 150, show: false },
-]
+export const entityBaseCols = function () {
+  return [
+    { prop: 'creator', label: 'mkh.creator', width: 150, expand: true },
+    { prop: 'createdTime', label: 'mkh.created_time', width: 200, expand: true },
+    { prop: 'modifier', label: 'mkh.modifier', width: 150, expand: true },
+    { prop: 'modifiedTime', label: 'mkh.modified_time', width: 200, expand: true },
+  ]
+}

@@ -1,14 +1,14 @@
 <template>
   <section class="m-icon-picker">
     <div class="m-icon-picker_input">
-      <el-input v-model="icon" :placeholder="placeholder || $t('mkh.iconPicker.placeholder')">
+      <el-input v-model="icon" :placeholder="placeholder || $t('mkh.icon_picker_placeholder')">
         <template #prepend>
           <m-icon :name="icon" />
         </template>
+        <template #append>
+          <m-button type="primary" icon="search" @click="showPannel = true" />
+        </template>
       </el-input>
-    </div>
-    <div class="m-icon-picker_button">
-      <m-button icon="search" @click="showPannel = true" />
     </div>
     <panel v-model="showPannel" @success="handleSelect" />
   </section>
@@ -17,7 +17,6 @@
 import { computed, inject, ref } from 'vue'
 import Panel from './panel.vue'
 export default {
-  name: 'IconPicker',
   components: { Panel },
   props: {
     modelValue: {
@@ -31,7 +30,7 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    const resetMethods = inject('resetMethods')
+    const resetMethods = inject('resetMethods', [])
     const icon = computed({
       get() {
         return props.modelValue
@@ -51,7 +50,7 @@ export default {
       icon.value = ''
     }
 
-    if (resetMethods) resetMethods.value.push(reset)
+    resetMethods.push(reset)
 
     return {
       icon,

@@ -1,7 +1,5 @@
-import { store } from '../store'
 /** 导入内置皮肤 */
 import './brief'
-import './youthful'
 
 export default app => {
   //注册皮肤
@@ -11,7 +9,7 @@ export default app => {
 
     // 注册状态
     if (skin.store) {
-      store.registerModule(['app', 'skin', skin.code], skin.store)
+      mkh.store.registerModule(['skin', skin.code], skin.store)
     }
   })
 }

@@ -1,21 +1,29 @@
 <template>
-  <m-button class="m-button-delete" :icon="icon" :text="text || $t('mkh.delete.text')" @click.stop="handleClick"> </m-button>
+  <m-button class="m-button-delete" :link="link" :type="type" :text="text" :icon="icon" @click.stop="handleClick">
+    <slot>
+      {{ $t('mkh.delete') }}
+    </slot>
+  </m-button>
 </template>
 <script>
 import { getCurrentInstance } from 'vue'
 import { useLoading, useMessage } from '../../composables'
 export default {
-  name: 'ButtonDelete',
   props: {
+    type: {
+      type: String,
+      default: 'danger',
+    },
+    text: {
+      type: Boolean,
+      default: true,
+    },
+    /** 是否为链接按钮 */
+    link: { type: Boolean, default: true },
     /** 图标 */
     icon: {
       type: String,
       default: 'delete',
-    },
-    /** 文本 */
-    text: {
-      type: String,
-      default: '',
     },
     /** 请求参数 */
     data: {
@@ -43,16 +51,16 @@ export default {
     const handleClick = () => {
       const { $t } = cit
       message
-        .confirm(props.msg || $t('mkh.delete.msg'), $t('mkh.delete.title'), {
-          confirmButtonText: $t('mkh.delete.ok'),
-          cancelButtonText: $t('mkh.delete.cancel'),
+        .confirm(props.msg || $t('mkh.delete_confirm_msg'), $t('mkh.delete_confirm_title'), {
+          confirmButtonText: $t('mkh.ok'),
+          cancelButtonText: $t('mkh.cancel'),
         })
         .then(() => {
-          loading.open($t('mkh.delete.loading'))
+          loading.open($t('mkh.delete_loading'))
           props
             .action(props.data)
             .then(() => {
-              message.success($t('mkh.delete.success'))
+              message.success($t('mkh.delete_success'))
               emit('success')
             })
             .catch(() => {

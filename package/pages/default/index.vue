@@ -1,5 +1,8 @@
 <template>
   <m-container>
-    <h1>欢迎访问业务模块化快速开发框架</h1>
+    <div style="margin: 150px auto; width: 400px; text-align: center">
+      <img :src="'./assets/mkh/coding.png'" style="width: 400px" />
+      <img :src="'./assets/mkh/motto.png'" style="width: 400px" />
+    </div>
   </m-container>
 </template>

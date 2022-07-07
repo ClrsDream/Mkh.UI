@@ -13,29 +13,11 @@
 </template>
 <script>
 import { computed } from 'vue'
-import { useStore } from 'vuex'
+import props from './props'
 export default {
-  name: 'Head',
-  props: {
-    title: {
-      type: String,
-      default: null,
-    },
-    icon: {
-      type: String,
-      default: null,
-    },
-    iconColor: {
-      type: String,
-      default: null,
-    },
-    size: {
-      type: String,
-      default: null,
-    },
-  },
+  props,
   setup(props) {
-    const store = useStore()
+    const { store } = mkh
 
     return {
       size_: computed(() => props.size || store.state.app.profile.skin.size),

@@ -1,13 +1,14 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { store } from '../store'
 import NProgress from 'nprogress'
 import routes from './routes'
-import defaultPage from '../pages/default/index.vue'
 
 // 进度条初始值
 NProgress.configure({ minimum: 0.2 })
 
-let router = null
+//验证值是否为true
+const isTrue = val => {
+  return typeof val === 'undefined' || val === null ? true : val
+}
 
 /**
  * @description 页面转路由
@@ -16,34 +17,36 @@ const page2route = (page, parentRoute, pages) => {
   /**********************************************
    * 页面属性与路由属性对应关系以及说明
    **********************************************
-   * title                页面默认标题，也是菜单默认名称
-   * icon                 页面默认图标，也是菜单默认图标
-   * path                 路由地址
-   * name                 路由名称
-   * component            路由对应组件
-   * inFrame              页面在框架中显示，有些页面可能是独立的，比如登陆页面，则该属性需要设置为false
-   * enablePermissionVerify 启用权限验证
-   * permissions          页面绑定的权限列表
-   * buttons              页面绑定的按钮信息
-   * breadcrumbs          页面的面包屑信息
-   * cache                页面是否缓存，路由的keep-alive特性
-   * props                路由启用props特性
+   * icon                             页面默认图标，也是菜单默认图标
+   * path                             路由地址
+   * name                             路由名称
+   * component                        路由对应组件
+   * inFrame                          页面在框架中显示，有些页面可能是独立的，比如登陆页面，则该属性需要设置为false
+   * hideMenu                         隐藏菜单
+   * enablePermissionVerify           启用权限验证
+   * permissions                      页面绑定的权限列表
+   * buttons                          页面绑定的按钮信息
+   * breadcrumbs                      页面的面包屑信息
+   * cache                            页面是否缓存，路由的keep-alive特性
+   * props                            路由启用props特性
+   * noMenu
    */
-  const { title, icon, path, name, component, inFrame, enablePermissionVerify, permissions, buttons, breadcrumbs, cache, props } = page
+  const { icon, path, name, component, inFrame, hideMenu, enablePermissionVerify, permissions, buttons, breadcrumbs, cache, props } = page
+
   const route = {
     path,
     name,
     component,
     props,
     meta: {
-      title,
       icon,
       buttons,
       permissions,
       breadcrumbs,
-      cache,
-      inFrame: typeof inFrame === 'undefined' || inFrame === null ? true : inFrame,
-      enablePermissionVerify: typeof enablePermissionVerify === 'undefined' || enablePermissionVerify === null ? true : enablePermissionVerify,
+      cache: isTrue(cache),
+      inFrame: isTrue(inFrame),
+      hideMenu: !isTrue(hideMenu),
+      enablePermissionVerify: isTrue(enablePermissionVerify),
     },
     children: [],
   }
@@ -57,27 +60,9 @@ const page2route = (page, parentRoute, pages) => {
   } else {
     parentRoute.children.push(route)
   }
-}
 
-/**
- * @description 配置默认页，如果用户设置了默认页，则将默认页对应的路由别名设置为'/'，如果没有则添加系统默认页
- */
-const handleDefaultPage = () => {
-  const { defaultPage } = mkh.config.site
-  let noDefaultPage = true
-  if (defaultPage) {
-    //根据路由名称查找路由信息
-    let defaultRoute = routes.find(m => m.name === defaultPage)
-    if (defaultRoute) {
-      defaultRoute.alias = '/'
-      noDefaultPage = false
-    }
-  }
-
-  //如果未设置默认页，则使用系统自带的默认页并将path设置为'/'
-  if (noDefaultPage) {
-    routes[0].path = '/'
-  }
+  //从page对象中删除component属性
+  delete page.component
 }
 
 export default app => {
@@ -92,18 +77,25 @@ export default app => {
         })
     })
 
-  //处理默认页
-  handleDefaultPage()
-
   //创建路由实例
-  router = createRouter({
+  const router = createRouter({
     history: createWebHashHistory(),
     routes,
   })
 
   router.beforeEach(async (to, from) => {
+    const { store } = mkh
+
     // 开始进度条
     NProgress.start()
+
+    //首页跳转
+    if (to.name === 'home') {
+      const { home } = store.state.app.config.site
+      if (home) {
+        return home
+      }
+    }
 
     //验证是否登录
     const { enablePermissionVerify } = to.meta
@@ -112,20 +104,17 @@ export default app => {
       if (!accessToken) {
         return '/login'
       }
-
       //加载个人信息
       if (!store.state.app.profile.accountId) {
         await store.dispatch('app/profile/init', null, { root: true })
       }
     }
 
-    // await store.dispatch('app/page/open', to, { root: true })
-
     // 关闭进度条
     NProgress.done()
   })
 
   app.use(router)
-}
 
-export { router }
+  mkh.router = router
+}

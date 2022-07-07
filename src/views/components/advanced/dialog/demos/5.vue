@@ -1,5 +1,5 @@
 <template>
-  <m-button type="success" text="显示对话框" @click="handleClick" />
+  <m-button type="success" @click="handleClick">显示对话框</m-button>
   <m-dialog v-model="visible" title="蜀道难·李白 〔唐代〕" icon="list">
     <template #toolbar>
       <m-button icon="plus" @click="handlePlus" />
@@ -16,7 +16,7 @@
 </template>
 <script>
 import { ref } from 'vue'
-import { useLoading, useMessage } from '@/package/composables'
+import { useLoading, useMessage } from '../../../../../../package/composables'
 export default {
   setup() {
     const message = useMessage()

@@ -31,8 +31,8 @@
 </template>
 <script>
 import { ref } from 'vue'
-import { useMessage } from '@/package/composables'
-import props from './_props'
+import { useMessage } from '../../../../../package/composables'
+import props from './apis/_props'
 import copy from 'clipboard-copy'
 import demo from './demos/1.vue'
 import code from './demos/1.vue?raw'
@@ -57,8 +57,8 @@ export default {
     return {
       props,
       list,
-      handleCopy,
       code,
+      handleCopy,
     }
   },
 }

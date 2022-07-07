@@ -1,26 +1,32 @@
 <template>
   <el-dialog
-    ref="elDialogRef"
+    ref="dialogRef"
     v-model="visible"
-    :top="top_ || top"
-    :custom-class="class_"
-    :show-close="false"
     :width="width"
+    :custom-class="class_"
+    :top="top"
+    :show-close="false"
     :modal="modal"
+    :append-to-body="appendToBody"
+    :draggable="draggable"
+    :lock-scroll="lockScroll"
+    :open-delay="openDelay"
+    :close-delay="closeDelay"
     :close-on-click-modal="closeOnClickModal"
+    :close-on-press-escape="closeOnPressEscape"
     :before-close="beforeClose"
     :destroy-on-close="destroyOnClose"
-    :lock-scroll="lockScroll"
-    :append-to-body="appendToBody"
     @open="handleOpen"
     @opened="handleOpened"
     @close="handleClose"
     @closed="handleClosed"
+    @open-auto-focus="handleOpenAutoFocus"
+    @close-auto-focus="handleCloseAutoFocus"
   >
     <!--头部-->
-    <template v-if="header" #title>
-      <m-head class="m-dialog_header" :icon="icon" :icon-color="iconColor" :size="size">
-        <slot name="title">{{ title }}</slot>
+    <template v-if="header" #header>
+      <m-head ref="headerRef" class="m-dialog_header" :title="title" :icon="icon" :icon-color="iconColor" :size="size">
+        <slot name="title"></slot>
         <template #toolbar>
           <!--工具栏插槽-->
           <slot name="toolbar" />
@@ -32,117 +38,116 @@
       </m-head>
     </template>
 
-    <!--内容-->
-    <div v-loading="loading" class="m-dialog_content" :element-loading-text="loadingText" :element-loading-background="loadingBackground" :element-loading-spinner="loadingSpinner">
-      <div class="m-dialog_body">
-        <slot v-if="noScrollbar && height"></slot>
-        <div v-else-if="noScrollbar && !height" class="m-dialog_wrapper">
-          <slot />
+    <div
+      v-loading="loading"
+      class="m-dialog_content"
+      :element-loading-text="loadingText || $t('mkh.loading_text')"
+      :element-loading-background="loadingBackground"
+      :element-loading-spinner="loadingSpinner"
+    >
+      <!--内容-->
+      <div class="m-dialog_body" :style="{ height: contentHeight + 'px' }">
+        <div ref="wrapperRef" class="m-dialog_wrapper">
+          <slot v-if="noScrollbar"></slot>
+          <m-scrollbar v-else ref="scrollbarRef">
+            <slot />
+          </m-scrollbar>
         </div>
-        <m-scrollbar v-else>
-          <slot />
-        </m-scrollbar>
       </div>
+      <!--尾部-->
+      <footer v-if="$slots.footer" ref="footerRef" class="m-dialog_footer">
+        <slot name="footer"></slot>
+      </footer>
     </div>
-    <!--尾部-->
-    <footer v-if="$slots.footer" class="m-dialog_footer">
-      <slot name="footer"></slot>
-    </footer>
   </el-dialog>
 </template>
 <script>
 import { computed, nextTick, ref } from 'vue'
 import { useVisible, useFullscreen } from '../../composables'
-import { addResizeListener, removeResizeListener } from 'element-plus/packages/utils/resize-event'
 import dom from '../../utils/dom'
 import props from './props'
 export default {
-  name: 'Dialog',
+  inheritAttrs: false,
   props,
-  emits: ['update:modelValue', 'open', 'opened', 'close', 'closed'],
+  emits: ['update:modelValue', 'open', 'opened', 'close', 'closed', 'open-auto-focus', 'close-auto-focus'],
   setup(props, { emit }) {
-    //默认情况下，未手动设置高度时距离顶部的距离
-    const top_ = ref('')
-
     //全屏操作
     const { isFullscreen, openFullscreen, closeFullscreen, toggleFullscreen } = useFullscreen(emit)
 
-    //使用当前时间戳创建唯一ID
     const class_ = computed(() => {
-      const { customClass, noPadding, noScrollbar, draggable } = props
+      const { customClass, noPadding, noScrollbar, height } = props
 
-      let classList = ['m-dialog', `m-dialog-${new Date().getTime()}`]
+      let classList = ['m-dialog']
       if (props.size) classList.push(props.size)
       if (noPadding) classList.push('no-padding')
       if (noScrollbar) classList.push('no-scrollbar')
-      if (draggable) classList.push('draggable')
+      if (height) classList.push('has-height')
       if (isFullscreen.value) classList.push('is-fullscreen')
-      if (customClass) classList.push(props.customClass)
-
+      if (customClass) {
+        classList.push(props.customClass)
+      }
       return classList.join(' ')
     })
 
-    const elDialogRef = ref(null)
-    let dialogEl = null
-    let headerEl = null
-    let footerEl = null
-    let scrollbarEl = null
-    let wrapperEl = null
-    let dragDownState = null
-    let headerHeight = 0
-    let footerHeight = 0
+    //标注是否在重置大小中
+    const resizing = ref(false)
 
-    //重置窗口大小
+    const dialogRef = ref(null)
+    const headerRef = ref(null)
+    const footerRef = ref(null)
+    const scrollbarRef = ref(null)
+    const wrapperRef = ref(null)
+    const contentHeight = ref(0)
+
+    let headAndFooterHeight = 0
+
+    /**
+     * 重绘窗口尺寸
+     */
     const resize = () => {
-      nextTick(() => {
-        headerHeight = headerEl.offsetHeight
-        footerHeight = footerEl != null ? footerEl.offsetHeight : 0
-        if (props.height) {
-          dialogEl.style.height = props.height
-        } else {
-          let viewHeight = props.noScrollbar ? wrapperEl.offsetHeight : scrollbarEl.offsetHeight
-          let height = viewHeight + headerHeight + footerHeight
-          //默认高度不能超出body
-          if (height > document.body.clientHeight - 100) {
-            height = document.body.clientHeight - 100
-            top_.value = '50px'
-          }
+      if (resizing.value) return
+      resizing.value = true
 
-          dialogEl.style.height = height + 'px'
+      const { height } = props
+      // 如果主动设置了高度
+      if (height) {
+        let h = 0
+        if (typeof height === 'number' && height > 0) {
+          h = height
+        } else if (height.endsWith('px')) {
+          h = parseFloat(height.replace('px', ''))
+        } else if (height.endsWith('%')) {
+          h = (document.body.clientHeight * parseFloat(height.replace('%', ''))) / 100
         }
-      })
+
+        contentHeight.value = h - headAndFooterHeight
+      } else {
+        contentHeight.value = props.noScrollbar ? wrapperRef.value.offsetHeight : scrollbarRef.value.$el.querySelector('.el-scrollbar__view').offsetHeight
+      }
+
+      //内容区域最大高度，不能超出body
+      let contentMaxHeight = document.body.clientHeight - headAndFooterHeight - 100
+      if (contentHeight.value > contentMaxHeight) {
+        contentHeight.value = contentMaxHeight
+      }
+      //更新滚动条
+      if (!props.noScrollbar) {
+        scrollbarRef.value.update()
+      }
+
+      resizing.value = false
     }
 
     const handleOpen = () => {
       nextTick(() => {
-        dialogEl = elDialogRef.value.dialogRef
-        headerEl = dialogEl.querySelector('.el-dialog__header')
-        footerEl = dialogEl.querySelector('.m-dialog_footer')
-        scrollbarEl = dialogEl.querySelector('.el-scrollbar__view')
-        wrapperEl = dialogEl.querySelector('.m-dialog_wrapper')
-
-        const { draggable, height, top } = props
-
-        //开启拖拽功能，先计算初始坐标再计算大小
-        if (draggable) {
-          //拖拽模式对话框的定位会设置为fixed模式，所以需要重新计算对话框的left属性
-
-          dialogEl.style.left = (document.body.offsetWidth - dialogEl.offsetWidth) / 2 + 'px'
-          dialogEl.style.top = top
-
-          dom.on(headerEl, 'mousedown', handleDragDown)
+        headAndFooterHeight = headerRef.value.$el.offsetHeight
+        if (footerRef.value != null) {
+          headAndFooterHeight += footerRef.value.offsetHeight
         }
 
-        //监听window窗口大小改变事件
-        if (!height) {
-          dom.on(window, 'resize', resize)
-        }
-
-        addResizeListener(props.noScrollbar ? wrapperEl : scrollbarEl, resize)
+        resize()
+        dom.on(window, 'resize', resize)
       })
-
-      resize()
-
       emit('open')
     }
 
@@ -152,57 +157,29 @@ export default {
 
     const handleClose = () => {
       emit('close')
-
-      //关闭window窗口大小改变事件
-      if (!props.height) dom.off(window, 'resize', resize)
-
-      removeResizeListener(props.noScrollbar ? wrapperEl : scrollbarEl, resize)
     }
 
     const handleClosed = () => {
+      dom.off(window, 'resize', resize)
       emit('closed')
     }
 
-    const handleDragDown = e => {
-      //开启拖拽并且不是全屏模式的情况才可以拖拽
-      if (props.draggable && !isFullscreen.value) {
-        dragDownState = e
-
-        dom.on(document, 'mousemove', handleDragMove)
-        dom.on(document, 'mouseup', handleDragUp)
-      }
+    const handleOpenAutoFocus = () => {
+      emit('open-auto-focus')
     }
 
-    const handleDragMove = e => {
-      const { dragOutPage, dragMinWidth } = props
-      let left = dialogEl.offsetLeft + (e.clientX - dragDownState.clientX)
-      let top = dialogEl.offsetTop + (e.clientY - dragDownState.clientY)
-      let leftMax = document.body.offsetWidth - dialogEl.offsetWidth
-      let leftMin = 0
-      let topMax = document.body.offsetHeight - dialogEl.offsetHeight
-      let topMin = 0
-
-      if (dragOutPage) {
-        leftMax = document.body.offsetWidth - dragMinWidth
-        leftMin = -dialogEl.offsetWidth + dragMinWidth
-        topMax = document.body.offsetHeight - headerHeight
-      }
-
-      dialogEl.style.left = Math.max(leftMin, Math.min(left, leftMax)) + 'px'
-      dialogEl.style.top = Math.max(topMin, Math.min(top, topMax)) + 'px'
-
-      dragDownState = e
-    }
-
-    const handleDragUp = e => {
-      dom.off(document, 'mousemove', handleDragMove)
-      dom.off(document, 'mouseup', handleDragUp)
+    const handleCloseAutoFocus = () => {
+      emit('open-auto-focus')
     }
 
     return {
       ...useVisible(props, emit),
-      elDialogRef,
-      top_,
+      dialogRef,
+      headerRef,
+      footerRef,
+      scrollbarRef,
+      wrapperRef,
+      contentHeight,
       class_,
       isFullscreen,
       openFullscreen,
@@ -213,6 +190,8 @@ export default {
       handleClose,
       handleClosed,
       resize,
+      handleOpenAutoFocus,
+      handleCloseAutoFocus,
     }
   },
 }

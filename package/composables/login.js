@@ -1,12 +1,11 @@
-import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useStore } from 'vuex'
+import { computed, getCurrentInstance, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import dom from '../utils/dom'
+import { i18n } from '../locales'
 
 export default function () {
   const { $notify } = getCurrentInstance().proxy
-  const store = useStore()
-  debugger
-  const router = useRouter()
+  const { router, store } = mkh
   const route = useRoute()
   const loading = ref(false)
   const formRef = ref(null)
@@ -21,36 +20,37 @@ export default function () {
     username: [
       {
         required: true,
-        message: '请输入用户名',
+        message: i18n.global.t('mkh.login.input_username'),
         trigger: 'blur',
       },
     ],
     password: [
       {
         required: true,
-        message: '请输入密码',
+        message: i18n.global.t('mkh.login.input_password'),
         trigger: 'blur',
       },
     ],
     verifyCode: [
       {
         required: true,
-        message: '请输入验证码',
+        message: i18n.global.t('mkh.login.input_code'),
         trigger: 'blur',
       },
     ],
   }
 
-  const { login } = mkh.config.actions
+  const login = computed(() => store.state.app.config.actions.login)
   const tryLogin = () => {
     formRef.value.validate(valid => {
       if (valid) {
         loading.value = true
-        login(model)
+        login
+          .value(model)
           .then(data => {
             $notify({
-              title: '登录提示',
-              message: '登录成功，正在跳转~',
+              title: i18n.global.t('mkh.login.notify_title'),
+              message: i18n.global.t('mkh.login.notify_success'),
               type: 'success',
               duration: 1500,
               onClose() {
@@ -62,7 +62,7 @@ export default function () {
           .catch(msg => {
             loading.value = false
             $notify.error({
-              title: '登录提示',
+              title: i18n.global.t('mkh.login.notify_title'),
               duration: 1500,
               message: msg,
             })
@@ -71,13 +71,18 @@ export default function () {
     })
   }
 
+  const handleEnterLogin = e => {
+    if (e.code === 'Enter') {
+      tryLogin()
+    }
+  }
+
   onMounted(() => {
-    //监听键盘enter事件
-    document.addEventListener('keydown', e => {
-      if (e.code === 'Enter') {
-        tryLogin()
-      }
-    })
+    dom.on(document, 'keydown', handleEnterLogin)
+  })
+
+  onUnmounted(() => {
+    dom.off(document, 'keydown', handleEnterLogin)
   })
 
   //如果令牌存在，则直接跳转

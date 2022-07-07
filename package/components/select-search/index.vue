@@ -1,5 +1,5 @@
 <template>
-  <el-select v-model="value_" :loading="loading" :size="size_" filterable remote :remote-method="remoteMethod" @change="handleChange">
+  <el-select v-model="value_" :loading="loading" filterable remote :remote-method="remoteMethod" @change="handleChange">
     <slot :options="options">
       <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" :disabled="item.disabled" />
     </slot>
@@ -7,9 +7,7 @@
 </template>
 <script>
 import { computed, inject, ref } from 'vue'
-import { useStore } from 'vuex'
 export default {
-  name: 'SelectSearch',
   props: {
     modelValue: {
       type: [String, Number],
@@ -27,7 +25,9 @@ export default {
   },
   emits: ['update:modelValue', 'change'],
   setup(props, { emit }) {
-    const resetMethods = inject('resetMethods')
+    const { store } = mkh
+
+    const resetMethods = inject('resetMethods', [])
 
     const value_ = computed({
       get() {
@@ -37,9 +37,6 @@ export default {
         emit('update:modelValue', val)
       },
     })
-
-    const store = useStore()
-    const size_ = computed(() => props.size || store.state.app.profile.skin.size)
 
     let timer = null
     const loading = ref(false)
@@ -73,11 +70,10 @@ export default {
       value_.value = ''
     }
 
-    if (resetMethods) resetMethods.value.push(reset)
+    resetMethods.push(reset)
 
     return {
       value_,
-      size_,
       loading,
       options,
       remoteMethod,

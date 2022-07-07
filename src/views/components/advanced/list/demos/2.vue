@@ -19,7 +19,10 @@
         </el-form-item>
       </template>
       <template #buttons>
-        <m-button type="success" icon="plus" text="自定义按钮" @click="handleCustomButton" />
+        <m-button type="success" icon="plus" @click="handleCustomButton">自定义按钮</m-button>
+      </template>
+      <template #operation="{ row }">
+        <m-button-edit @click="handleEdit(row)">编辑</m-button-edit>
       </template>
     </m-list>
   </div>
@@ -38,8 +41,8 @@ export default {
         label: '名称',
       },
       { prop: 'author', label: '作者' },
-      { prop: 'dynasty', label: '朝代' },
-      { prop: 'type', label: '类型' },
+      { prop: 'dynasty', label: '朝代朝代', expand: true },
+      { prop: 'type', label: '类型', expand: true },
     ])
 
     const deleteMethod = ids => {
@@ -54,12 +57,17 @@ export default {
       })
     }
 
+    const handleEdit = row => {
+      alert(`编辑列：${row.id}`)
+    }
+
     return {
       model,
       cols,
       query,
       deleteMethod,
       handleCustomButton,
+      handleEdit,
     }
   },
 }

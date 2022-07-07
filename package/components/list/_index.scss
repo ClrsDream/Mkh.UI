@@ -15,6 +15,8 @@
     position: relative;
     flex-shrink: 0;
     padding: 7px 10px;
+    text-align: right;
+    border-bottom: 1px solid #ebeef5;
   }
 
   &_body {
@@ -33,38 +35,25 @@
         width: 0;
       }
     }
-
-    .el-table__header {
-      th {
-        background: #f5f7fa;
-      }
-    }
   }
 
   &_footer {
+    padding: 3px;
     flex-shrink: 0;
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    height: 41px;
+    height: auto;
 
     &_left {
       flex-grow: 1;
     }
     &_right {
       flex-shrink: 0;
-      .el-pagination {
-        margin-top: 4px;
-      }
     }
   }
 
-  &_pagination {
-    padding-top: 4px;
-  }
-
   &_setcolumn_btn {
-    margin: 4px 7px;
     padding: 0 15px;
     height: 32px;
     min-height: 32px;
@@ -86,16 +75,36 @@
   }
 
   &_expand {
-    .el-descriptions {
-      td {
-        border: none;
-      }
+    padding: 15px 30px 15px 48px;
+
+    &_title {
+      margin-bottom: 3px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    &_label {
+      margin: 0;
+      padding: 0;
+      border: none !important;
+      text-align: right;
+      font-size: 12px;
+      color: #999;
+    }
+
+    &_content {
+      font-size: 12px;
+      color: #999;
     }
   }
 
   &_operation {
     display: inline-block;
     white-space: nowrap;
+
+    #{$prefix}-button {
+      padding: 0;
+    }
   }
 
   &.is-fullscreen {
@@ -105,5 +114,21 @@
     height: 100%;
     width: 100%;
     z-index: $z-index-list-fullscreen;
+  }
+
+  &.fold-query-bar {
+    #{$prefix}-list_querybar {
+      display: none;
+    }
+  }
+
+  &.pagination-on-right {
+    #{$prefix}-list_footer {
+      flex-direction: row-reverse !important;
+
+      &_left {
+        text-align: right;
+      }
+    }
   }
 }

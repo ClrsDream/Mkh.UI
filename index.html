@@ -2,7 +2,7 @@
 <html lang="zh">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="./assets/mkh/favicon.ico" />
+    <link rel="icon" href="<%= favicon %>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title></title>
     <style type="text/css">
@@ -31,6 +31,7 @@
       a {
         text-decoration: none;
       }
+
       h1,
       h2,
       h3,
@@ -70,22 +71,27 @@
         height: 32px;
         transform-style: preserve-3d;
       }
+
       .m-loader_box:nth-child(1) {
         transform: translate(100%, 0);
         animation: m-loader-box1 0.8s linear infinite;
       }
+
       .m-loader_box:nth-child(2) {
         transform: translate(0, 100%);
         animation: m-loader-box2 0.8s linear infinite;
       }
+
       .m-loader_box:nth-child(3) {
         transform: translate(100%, 100%);
         animation: m-loader-box3 0.8s linear infinite;
       }
+
       .m-loader_box:nth-child(4) {
         transform: translate(200%, 0);
         animation: m-loader-box4 0.8s linear infinite;
       }
+
       .m-loader_box > div {
         position: absolute;
         width: 100%;
@@ -102,15 +108,18 @@
         left: 0;
         transform: rotateY(0deg) rotateX(0deg) translateZ(16px);
       }
+
       .m-loader_box > div:nth-child(2) {
         right: 0;
         background: #145af2;
         transform: rotateY(90deg) rotateX(0deg) translateZ(16px);
       }
+
       .m-loader_box > div:nth-child(3) {
         background: #447cf5;
         transform: rotateY(0deg) rotateX(-90deg) translateZ(16px);
       }
+
       .m-loader_box > div:nth-child(4) {
         top: 0;
         left: 0;
@@ -123,6 +132,7 @@
         50% {
           transform: translate(100%, 0);
         }
+
         100% {
           transform: translate(200%, 0);
         }
@@ -132,9 +142,11 @@
         0% {
           transform: translate(0, 100%);
         }
+
         50% {
           transform: translate(0, 0);
         }
+
         100% {
           transform: translate(100%, 0);
         }
@@ -145,6 +157,7 @@
         50% {
           transform: translate(100%, 100%);
         }
+
         100% {
           transform: translate(0, 100%);
         }
@@ -154,9 +167,11 @@
         0% {
           transform: translate(200%, 0);
         }
+
         50% {
           transform: translate(200%, 100%);
         }
+
         100% {
           transform: translate(100%, 100%);
         }
@@ -177,8 +192,9 @@
       }
     </style>
   </head>
+
   <body>
-    <div id="app">
+    <div id="app" style="display: none">
       <div class="m-loader">
         <div class="m-loader_wrapper">
           <div class="m-loader_box">

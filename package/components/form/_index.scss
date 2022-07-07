@@ -1,6 +1,11 @@
 #{$prefix}-form {
+  .el-input,
   .el-select,
   .el-input-number {
     width: 100%;
+  }
+
+  .el-row {
+    padding-right: 50px;
   }
 }

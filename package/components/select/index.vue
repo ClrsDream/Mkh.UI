@@ -1,15 +1,13 @@
 <template>
-  <el-select v-model="value_" v-loading="loading" class="m-select" :size="size_" element-loading-background="rgba(255,255,255,.6)" @change="handleChange">
+  <el-select v-model="value_" v-loading="loading" class="m-select" element-loading-background="rgba(255,255,255,.6)" :placeholder="placeholder || $t('mkh.please_select')">
     <slot :options="options">
       <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" :disabled="item.disabled" />
     </slot>
   </el-select>
 </template>
 <script>
-import { computed, inject, ref } from 'vue'
-import { useStore } from 'vuex'
+import { computed, inject, ref, watch } from 'vue'
 export default {
-  name: 'Select',
   props: {
     modelValue: {
       type: [String, Number],
@@ -21,10 +19,20 @@ export default {
     },
     /** 是否选中第一个 */
     checkedFirst: Boolean,
+    /** 是否创建时进行刷新 */
+    refreshOnCreated: {
+      type: Boolean,
+      default: true,
+    },
+    placeholder: {
+      type: String,
+      default: '',
+    },
   },
   emits: ['update:modelValue', 'update:label', 'change'],
   setup(props, { emit }) {
-    const resetMethods = inject('resetMethods')
+    const resetMethods = inject('resetMethods', [])
+
     const value_ = computed({
       get() {
         return props.modelValue
@@ -34,8 +42,8 @@ export default {
       },
     })
 
-    const store = useStore()
-    const size_ = computed(() => props.size || store.state.app.profile.skin.size)
+    //是否首次刷新
+    let firstRefresh = true
 
     const loading = ref(false)
     const options = ref([])
@@ -47,10 +55,18 @@ export default {
         .then(data => {
           options.value = data
 
-          if (!props.modelValue && props.checkedFirst && data.length > 0) {
-            const checkedValue = data[0].value
-            value_.value = checkedValue
-            handleChange(checkedValue)
+          if (firstRefresh) {
+            if (value_.value) {
+              //首次刷新并且存在初始值
+              handleChange(value_.value)
+            } else if (props.checkedFirst && data.length > 0) {
+              //首次刷新并且默认选中第一个选项
+              const checkedValue = data[0].value
+              value_.value = checkedValue
+              handleChange(checkedValue)
+            }
+
+            firstRefresh = false
           }
         })
         .finally(() => {
@@ -64,17 +80,19 @@ export default {
       emit('change', val, option, options)
     }
 
-    refresh()
+    if (props.refreshOnCreated) refresh()
 
     const reset = () => {
       value_.value = ''
+      handleChange('')
     }
 
-    if (resetMethods) resetMethods.value.push(reset)
+    watch(value_, handleChange)
+
+    resetMethods.push(reset)
 
     return {
       value_,
-      size_,
       loading,
       options,
       refresh,

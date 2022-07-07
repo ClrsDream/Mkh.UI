@@ -1,10 +1,7 @@
 import { createStore } from 'vuex'
+import config from './modules/config'
 import profile from './modules/profile'
-import page from './modules/page'
-import skin from './modules/skin'
 import token from './modules/token'
-
-let store = null
 
 export default app => {
   const options = {
@@ -13,14 +10,18 @@ export default app => {
       app: {
         namespaced: true,
         modules: {
+          config,
           profile,
-          skin,
-          page,
           token,
         },
       },
       //业务模块
       mod: {
+        namespaced: true,
+        modules: {},
+      },
+      //皮肤
+      skin: {
         namespaced: true,
         modules: {},
       },
@@ -33,9 +34,9 @@ export default app => {
       options.modules.mod.modules[m.code] = m.store
     })
 
-  store = createStore(options)
+  const store = createStore(options)
 
   app.use(store)
-}
 
-export { store }
+  mkh.store = store
+}

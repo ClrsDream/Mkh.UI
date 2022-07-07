@@ -1,6 +1,6 @@
 <template>
   <div style="padding: 50px">
-    <m-button type="danger" :text="disabled ? '启用表单' : '禁用表单'" @click="disabled = !disabled" />
+    <m-button type="danger" @click="disabled = !disabled">{{ disabled ? '启用表单' : '禁用表单' }}</m-button>
     <m-form ref="formRef" :action="action" :model="model" :rules="rules" :disabled="disabled" @success="handleSuccess">
       <el-form-item label="活动名称" prop="name">
         <el-input v-model="model.name"></el-input>
@@ -13,49 +13,45 @@
       </el-form-item>
       <el-form-item label="活动时间">
         <el-col :span="11">
-          <el-date-picker v-model="model.date1" type="date" placeholder="选择日期" style="width: 100%"></el-date-picker>
+          <el-date-picker v-model="model.date1" type="date" style="width: 100%"></el-date-picker>
         </el-col>
-        <el-col class="line" :span="2">-</el-col>
+        <el-col class="line m-text-center" :span="2">-</el-col>
         <el-col :span="11">
-          <el-time-picker v-model="model.date2" placeholder="选择时间" style="width: 100%"></el-time-picker>
+          <el-time-picker v-model="model.date2" style="width: 100%"></el-time-picker>
         </el-col>
       </el-form-item>
       <el-form-item>
-        <m-button type="primary" text="创建" @click="() => formRef.submit()" />
-        <m-button type="info" text="重置" @click="() => formRef.reset()" />
+        <m-button type="primary" @click="() => formRef.submit()">创建</m-button>
+        <m-button type="info" @click="() => formRef.reset()">重置</m-button>
       </el-form-item>
     </m-form>
   </div>
 </template>
-<script>
-import { reactive, ref } from 'vue'
-import { useMessage } from '@/package/composables'
-export default {
-  setup() {
-    const message = useMessage()
-    const formRef = ref(null)
-    const model = reactive({
-      name: '',
-      region: '',
-      date1: '',
-      date2: '',
-    })
-    const rules = {
-      name: [{ required: true, message: '请输入名称' }],
-    }
-    const disabled = ref(false)
+<script setup>
+import { inject, reactive, ref, watch } from 'vue'
+import { useMessage } from '../../../../../../package/composables'
+const message = useMessage()
+const formRef = ref(null)
+const model = reactive({
+  name: '',
+  region: '',
+  date1: '',
+  date2: '',
+})
 
-    const action = () => {
-      return new Promise(resolve => {
-        setTimeout(resolve, 2000)
-      })
-    }
+const rules = {
+  name: [{ required: true, message: '请输入名称' }],
+}
 
-    const handleSuccess = () => {
-      message.success('恭喜你，保存成功')
-    }
+const disabled = ref(false)
 
-    return { formRef, model, rules, disabled, action, handleSuccess }
-  },
+const action = () => {
+  return new Promise(resolve => {
+    setTimeout(resolve, 2000)
+  })
+}
+
+const handleSuccess = () => {
+  message.success('恭喜你，保存成功')
 }
 </script>

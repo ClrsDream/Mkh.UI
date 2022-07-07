@@ -1,5 +1,4 @@
 import db from '../../utils/db'
-import { router } from '../../router'
 const key = `token`
 
 export default {
@@ -16,7 +15,7 @@ export default {
     /**
      * @description 登录
      */
-    async login({ commit, dispatch }, token) {
+    async login({ commit }, token) {
       if (!token) {
         //尝试从本地加载令牌
         token = db.get(key)
@@ -37,10 +36,10 @@ export default {
       commit('app/profile/clear', null, { root: true })
 
       // 跳转到登录页面
-      router.push({
+      mkh.router.push({
         name: 'login',
         query: {
-          redirect: router.currentRoute.value.fullPath,
+          redirect: mkh.router.currentRoute.value.fullPath,
         },
       })
     },
@@ -55,7 +54,7 @@ export default {
       state.refreshToken = refreshToken
     },
     /**
-     * 清楚令牌
+     * 清除令牌
      */
     clear(state) {
       state.accountId = ''

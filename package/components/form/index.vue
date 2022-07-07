@@ -3,43 +3,53 @@
     ref="formRef"
     v-loading="!noLoading && loading"
     class="m-form"
-    :label-width="labelWidth"
-    :size="size_"
+    :size="size"
     :model="model"
     :rules="rules"
-    :element-loading-text="loadingText || $t('mkh.form.loadingText')"
+    :inline="inline"
+    :label-width="labelWidth"
+    :label-position="labelPosition"
+    :label-suffix="labelSuffix"
+    :hide-required-asterisk="hideRequiredAsterisk"
+    :show-message="showMessage"
+    :inline-message="inlineMessage"
+    :status-icon="statusIcon"
+    :validate-on-rule-change="validateOnRuleChange"
+    :disabled="disabled"
+    :element-loading-text="loadingText || $t('mkh.loading_text_save')"
     :element-loading-background="loadingBackground || loadingOptions.background"
     :element-loading-spinner="loadingSpinner || loadingOptions.spinner"
   >
-    <slot />
+    <slot></slot>
   </el-form>
 </template>
 <script>
-import { computed, provide, ref } from 'vue'
-import { useStore } from 'vuex'
+import { provide, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import props from './props'
+import dom from '../../utils/dom'
+
 export default {
-  name: 'Form',
+  inheritAttrs: false,
   props,
   emits: ['success', 'error', 'validate-success', 'validate-error'],
   setup(props, { emit }) {
-    const store = useStore()
-    const size_ = computed(() => props.size || store.state.app.profile.skin.size)
-    const loadingOptions = mkh.config.component.loading
+    const { store } = mkh
+
+    const loadingOptions = store.state.app.config.component.loading
 
     const formRef = ref(null)
     //加载动画
     const loading = ref(false)
 
     /** 自定义表单的重置方法数组 */
-    const resetMethods = ref([])
+    const resetMethods = []
     provide('resetMethods', resetMethods)
 
     /** 表单验证 */
     const validate = callback => {
       formRef.value.validate(async valid => {
         // 自定义验证
-        if (valid && (!props.customValidate || props.customValidate() === true)) {
+        if (valid && (!props.customValidate || props.customValidate())) {
           emit('validate-success')
           callback()
         } else {
@@ -67,6 +77,9 @@ export default {
               loading.value = false
               emit('error')
             })
+        } else {
+          loading.value = false
+          console.log('action is null')
         }
       })
     }
@@ -74,10 +87,36 @@ export default {
     /** 重置 */
     const reset = () => {
       formRef.value.resetFields()
-      resetMethods.value.forEach(m => m())
+      resetMethods.forEach(m => m())
     }
 
-    return { size_, loading, loadingOptions, formRef, validate, submit, reset }
+    const handleEnterSubmit = e => {
+      if (e.keyCode === 13) {
+        query()
+      }
+    }
+
+    onMounted(() => {
+      nextTick(() => {
+        if (!props.disabledEnter) dom.on(formRef.value.$el, 'keydown', handleEnterSubmit)
+      })
+    })
+
+    onBeforeUnmount(() => {
+      if (!props.disabledEnter) dom.off(formRef.value.$el, 'keydown', handleEnterSubmit)
+    })
+
+    return {
+      loading,
+      loadingOptions,
+      formRef,
+      validate,
+      submit,
+      reset,
+      validateField: (props, callback) => formRef.value.validateField(props, callback),
+      scrollToField: prop => formRef.value.scrollToField(prop),
+      clearValidate: props => formRef.value.clearValidate(props),
+    }
   },
 }
 </script>

@@ -6,8 +6,10 @@
 <script>
 export default {
   setup() {
+    const { store } = mkh
+
     return {
-      loginComponent: mkh.config.component.login,
+      loginComponent: store.state.app.config.component.login,
     }
   },
 }

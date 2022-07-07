@@ -1,5 +1,5 @@
 import menus from '../menus'
-import avatar from '../assets/avatar.png'
+import db from '../../package/utils/db'
 
 export default http => {
   /**
@@ -7,7 +7,7 @@ export default http => {
    */
   const login = ({ username, password }) => {
     return new Promise((resolve, reject) => {
-      if (username === 'admin' && password === '17mkh') {
+      if (username === '17mkh' && password === '123456') {
         resolve({
           accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
           refreshToken: '',
@@ -37,23 +37,11 @@ export default http => {
     })
   }
 
-  const setMenusId = (children, parent) => {
-    children.forEach((sub, index) => {
-      if (parent) {
-        sub.id = parent.id + '-' + index
-      } else {
-        sub.id = index + ''
-      }
-      if (sub.children && sub.children.length > 0) {
-        setMenusId(sub.children, sub)
-      }
-    })
-  }
   /**
    * @description 获取账户信息
    */
   const getProfile = () => {
-    setMenusId(menus)
+    let skin = db.get('skin')
 
     return new Promise(resolve => {
       resolve({
@@ -64,7 +52,7 @@ export default http => {
         /**昵称 */
         nickname: 'OLDLI',
         /**头像 */
-        avatar,
+        avatar: './assets/mkh/avatar.png',
         /** 菜单列表 */
         menus,
         /** 权限列表 */
@@ -72,15 +60,15 @@ export default http => {
         /** 按钮列表 */
         buttons: ['admin_account_add', 'admin_account_edit'],
         /** 皮肤设置 */
-        skin: {
-          /** 名称 */
-          name: 'brief',
-          /** 主题 */
-          theme: '',
-          /** 尺寸 */
-          size: 'small',
-        },
+        skin,
       })
+    })
+  }
+
+  const toggleSkin = skin => {
+    return new Promise(resolve => {
+      db.set('skin', skin)
+      resolve()
     })
   }
 
@@ -88,5 +76,6 @@ export default http => {
     login,
     getVerifyCode,
     getProfile,
+    toggleSkin,
   }
 }

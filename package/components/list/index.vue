@@ -3,7 +3,7 @@
     v-loading="loading"
     :class="class_"
     :style="{ width, height }"
-    :element-loading-text="loadingText || $t('mkh.list.loadingText')"
+    :element-loading-text="loadingText || $t('mkh.loading_text')"
     :element-loading-background="loadingBackground || loadingOptions.background"
     :element-loading-spinner="loadingSpinner || loadingOptions.spinner"
   >
@@ -21,18 +21,22 @@
     </m-head>
     <!--查询栏-->
     <div v-if="!noQuerybar" class="m-list_querybar">
-      <el-form ref="queryFormRef" :inline="true" :model="queryModel" :size="size_">
+      <m-form ref="queryFormRef" :inline="true" :model="queryModel" :rules="queryRules" :size="size_" disabled-enter>
         <slot name="querybar" :selection="selection" :total="total" />
-        <el-form-item>
-          <m-button v-if="showSearchBtn" type="primary" icon="search" :text="searchBtnText || $t('mkh.list.search')" @click="query"></m-button>
-          <m-button v-if="showResetBtn" type="info" icon="refresh" :text="resetBtnText || $t('mkh.list.reset')" @click="reset"></m-button>
-          <m-button v-if="showDeleteBtn" type="danger" icon="delete" :text="deleteBtnText || $t('mkh.list.delete')" @click="remove" />
-        </el-form-item>
-      </el-form>
+      </m-form>
     </div>
     <!--自定义按钮-->
-    <div v-if="$slots.buttons" class="m-list_buttons">
+    <div class="m-list_buttons">
+      <m-button v-if="!noQuerybar && showSearchBtn" type="primary" icon="search" @click="query">{{ searchBtnText || $t('mkh.search') }}</m-button>
+      <m-button v-if="!noQuerybar && showResetBtn" type="info" icon="refresh" @click="reset">{{ resetBtnText || $t('mkh.reset') }}</m-button>
+      <m-button v-if="showExport" v-m-has="exportBtnCode" type="warning" icon="export" @click="openExport">{{ $t('mkh.export') }}</m-button>
+      <m-button v-if="showDeleteBtn" type="danger" icon="delete" @click="remove">{{ deleteBtnText || $t('mkh.delete') }}</m-button>
       <slot name="buttons" :selection="selection" :total="total" @click="remove" />
+
+      <!--折叠查询栏-->
+      <el-link :underline="false" type="primary" class="m-margin-l-15 m-margin-r-5" @click="foldQueryBar = !foldQueryBar">
+        <m-icon :name="foldQueryBar ? 'fold-b' : 'fold-u'" />
+      </el-link>
     </div>
     <!--数据表格-->
     <div class="m-list_body">
@@ -56,8 +60,8 @@
             :lazy="lazy"
             :load="load"
             :tree-props="treeProps"
-            border
-            stripe
+            :border="border"
+            :stripe="stripe"
             :highlight-current-row="highlightCurrentRow"
             @select="(selection, row) => $emit('select', selection, row)"
             @select-all="selection => $emit('select-all', selection)"
@@ -77,27 +81,51 @@
             @expand-change="(row, expandedRows) => $emit('expand-change', row, expandedRows)"
           >
             <!--展开行-->
-            <el-table-column v-if="$slots.expand" type="expand" fixed="left">
+            <el-table-column v-if="isShowExpand" type="expand">
               <template #default="{ row }">
                 <div class="m-list_expand">
-                  <slot name="expand" :row="row"> </slot>
+                  <slot name="expand" :row="row">
+                    <header class="m-list_expand_title">{{ $t('mkh.more_info') }}</header>
+                    <section class="m-list_expand_body">
+                      <table class="m-list_expand_table">
+                        <tr v-for="col in expandCols" :key="col.prop">
+                          <td class="m-list_expand_label">
+                            <slot :name="`col-${col.prop}-header`">
+                              {{ $t(col.label) }}
+                            </slot>
+                            <span>：</span>
+                          </td>
+                          <td class="m-list_expand_content">
+                            <slot :name="'col-' + col.prop" :row="row" :rows="rows">
+                              <!--图标-->
+                              <template v-if="col.formatter && col.formatter === 'icon'">
+                                <m-icon v-if="row[col.prop]" :name="row[col.prop]"></m-icon>
+                                <span v-else>-</span>
+                              </template>
+                              <template v-else>{{ formatter(row, col) }}</template>
+                            </slot>
+                          </td>
+                        </tr>
+                      </table>
+                    </section>
+                  </slot>
                 </div>
               </template>
             </el-table-column>
 
             <!-- 多选 -->
-            <el-table-column v-if="multiple" type="selection" fixed="left" align="center" width="55" />
+            <el-table-column v-if="multiple" type="selection" align="center" width="55" />
 
             <!--序号-->
-            <el-table-column v-if="index" type="index" fixed="left" :index="indexMethod" :label="$t('mkh.list.index')" align="center" width="60"> </el-table-column>
+            <el-table-column v-if="index" type="index" :index="indexMethod_" :label="$t('mkh.serial_number')" align="center" width="60"> </el-table-column>
 
             <!--渲染列-->
-            <template v-for="col in cols_">
+            <template v-for="col in tableCols">
               <el-table-column
                 v-if="col.show"
                 :key="col.prop"
                 :prop="col.prop"
-                :label="col.label"
+                :label="$t(col.label)"
                 :width="col.width"
                 :min-width="col.minWidth"
                 :fixed="col.fixed"
@@ -111,23 +139,30 @@
                 <!--自定义头-->
                 <template #header>
                   <slot :name="`col-${col.prop}-header`">
-                    {{ col.label }}
+                    {{ $t(col.label) }}
                   </slot>
                 </template>
 
                 <template #default="{ row }">
-                  <slot :name="'col-' + col.prop" :row="row" :rows="rows">{{ formatter(row, col) }}</slot>
+                  <slot :name="'col-' + col.prop" :row="row" :rows="rows">
+                    <!--图标-->
+                    <template v-if="col.formatter && col.formatter === 'icon'">
+                      <m-icon v-if="row[col.prop]" :name="row[col.prop]"></m-icon>
+                      <span v-else>-</span>
+                    </template>
+                    <template v-else>{{ formatter(row, col) }}</template>
+                  </slot>
                 </template>
               </el-table-column>
             </template>
 
             <!--操作列-->
-            <el-table-column v-if="$slots.operation" :width="operationWidth || operationWidth_" fixed="right" align="center">
+            <el-table-column v-if="$slots.operation" :width="operationWidth_" fixed="right" align="center">
               <template #header>
-                <slot name="operation-header">{{ $t('mkh.list.operationHeader') }}</slot>
+                <slot name="operation-header">{{ $t('mkh.operate') }}</slot>
               </template>
               <template #default="{ row }">
-                <div ref="operationRef" class="m-list_operation">
+                <div class="m-list_operation">
                   <slot name="operation" :row="row" :rows="rows" />
                 </div>
               </template>
@@ -137,18 +172,19 @@
       </div>
     </div>
     <!--底部-->
-    <m-flex-row class="m-list_footer">
-      <m-flex-auto class="m-list_footer_left">
+    <m-flex-row v-if="!noFooter" class="m-list_footer">
+      <m-flex-auto class="m-list_footer_left m-center-v">
         <slot name="footer" :selection="selection" :total="total" />
       </m-flex-auto>
       <m-flex-fixed>
         <m-flex-row>
-          <m-flex-fixed class="m-list_pagination">
+          <m-flex-fixed class="m-list_pagination m-center-v">
             <!--分页-->
             <el-pagination
+              v-if="!noPagination"
               :page-size="page.size"
               :current-page="page.index"
-              :small="pagination_.small"
+              :small="pageSmall"
               :background="pagination_.background"
               :page-sizes="pagination_.pageSizes"
               :layout="pagination_.layout"
@@ -158,9 +194,9 @@
             >
             </el-pagination>
           </m-flex-fixed>
-          <m-flex-auto>
+          <m-flex-auto class="m-center-v">
             <!--配置列-->
-            <m-button v-if="!disableSetColumn" class="m-list_setcolumn_btn" :text="$t('mkh.list.setCol')" @click="showSetColDialog = true" />
+            <m-button v-if="!disableSetColumn" type="primary" class="m-list_setcolumn_btn" @click="showSetColDialog = true">{{ $t('mkh.set_column') }}</m-button>
           </m-flex-auto>
         </m-flex-row>
       </m-flex-fixed>
@@ -171,30 +207,36 @@
       v-if="!disableSetColumn"
       v-model="showSetColDialog"
       custom-class="m-list_setcolumn_dialog"
-      :title="$t('mkh.list.setColDialogTitle')"
+      :title="$t('mkh.set_column')"
       icon="table"
       width="1200px"
-      height="80%"
+      height="500px"
+      no-scrollbar
       no-padding
       draggable
     >
       <set-column v-model="cols_" :size="size_" />
     </m-dialog>
 
-    <m-dialog v-model="showExportDialog" :title="$t('mkh.list.exportDialogTitle')" custom-class="m-list_export_dialog"></m-dialog>
+    <!--导出-->
+    <div v-m-has="exportBtnCode">
+      <m-export v-if="showExport" v-model="showExportDialog" :export-method="exportMethod || queryMethod" :query-model="queryModel" :cols="cols_" :title="title" />
+    </div>
   </div>
 </template>
 <script>
-import { computed, getCurrentInstance, nextTick, reactive, ref } from 'vue'
-import { useFullscreen, useLoading, useMessage } from '../../composables'
-import { useStore } from 'vuex'
+import { computed, getCurrentInstance, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { useFullscreen, useLoading, useMessage, useSize } from '../../composables'
 import { columnOptions, paginationOptions } from './default'
 import props from './props'
 import SetColumn from './components/set-column.vue'
+import MExport from './components/export.vue'
 import _ from 'lodash'
+import dom from '../../utils/dom'
+import { SIZE_DEFINITIONS } from '../../utils/constants'
+
 export default {
-  name: 'List',
-  components: { SetColumn },
+  components: { SetColumn, MExport },
   props,
   emits: [
     'select',
@@ -221,24 +263,38 @@ export default {
     'error',
   ],
   setup(props, { emit }) {
+    const { store } = mkh
+
     const cit = getCurrentInstance().proxy
     const message = useMessage()
 
     //全屏操作
     const { isFullscreen, openFullscreen, closeFullscreen, toggleFullscreen } = useFullscreen(emit)
     //加载动画配置
-    const loadingOptions = mkh.config.component.loading
+    const loadingOptions = store.state.app.config.component.loading
     const globalLoading = useLoading()
 
-    const store = useStore()
-    const size_ = computed(() => props.size || store.state.app.profile.skin.size)
+    //折叠查询栏
+    const foldQueryBar = ref(false)
+
+    const { size: size_ } = useSize(props)
     const class_ = computed(() => {
-      return ['m-list', size_, isFullscreen.value ? 'is-fullscreen' : '']
+      return ['m-list', size_, isFullscreen.value ? 'is-fullscreen' : '', foldQueryBar.value ? 'fold-query-bar' : '', props.paginationOnRight ? 'pagination-on-right' : '']
     })
     const pagination_ = computed(() => Object.assign({}, paginationOptions, props.pagination || {}))
 
     //处理列配置信息
     const cols_ = ref(props.cols.map(m => _.merge({}, columnOptions, m)))
+
+    //在表格中显示的列
+    const tableCols = computed(() => cols_.value.filter(m => !m.expand))
+
+    //在折叠区域显示的列
+    const expandCols = computed(() => cols_.value.filter(m => m.expand))
+
+    //是否显示折叠区域
+    const isShowExpand = computed(() => expandCols.value.length > 0)
+
     //操作列宽度
     const operationWidth_ = ref(0)
 
@@ -252,44 +308,75 @@ export default {
     //总数量
     const total = ref(0)
     //分页信息
-    const page = reactive({ index: 1, size: 15, sort: [] })
+    const page = reactive({ index: 1, size: props.defaultPageSize, sort: [] })
     //查询表单引用
     const queryFormRef = ref(null)
     //表格引用
     const tableRef = ref(null)
-    //操作列引用
-    const operationRef = ref(null)
     //加载动画
     const loading = ref(false)
     //多选模式下已选择项列表
     const selection = ref([])
+    //根据字体大小判断是否启用小的分页
+    const pageSmall = computed(() => size_.value == SIZE_DEFINITIONS.SMALL)
+    //计算操作列最大宽度
+    const computeOperationWidth = () => {
+      if (!tableRef.value) return
+
+      let maxWidth = 0
+
+      tableRef.value.$el.querySelectorAll('.m-list_operation').forEach(node => {
+        const { width } = node.getBoundingClientRect()
+
+        if (width > maxWidth) {
+          maxWidth = width
+        }
+      })
+
+      //设置最小宽度
+      if (maxWidth === 0) {
+        maxWidth = 50
+      }
+      operationWidth_.value = parseInt(props.operationWidth || maxWidth + 40)
+    }
+
+    /**序号 */
+    const indexMethod_ = computed(() => (props.indexMethod ? props.indexMethod : calcIndex))
+    /**序号计算 */
+    const calcIndex = index => {
+      return index + page.size * (page.index - 1) + 1
+    }
 
     //查询操作
     const query = () => {
-      loading.value = true
-      props
-        .queryMethod({ ...props.queryModel, page })
-        .then(data => {
-          rows.value = data.rows
-          total.value = data.total
+      queryFormRef.value.validate(() => {
+        loading.value = true
 
-          nextTick(() => {
-            if (operationRef.value) {
-              let wid = operationRef.value.getBoundingClientRect().width + 30
-              if (wid < 40) {
-                wid = 120
-              }
-              operationWidth_.value = wid
-            }
+        const params = { ...props.queryModel, page }
 
-            clearSelection()
+        //查询前执行的函数
+        if (props.beforeQuery) {
+          props.beforeQuery(params)
+        }
+
+        props
+          .queryMethod(params)
+          .then(data => {
+            rows.value = data[props.actionDataStr] || []
+            total.value = data.total
+
+            nextTick(() => {
+              computeOperationWidth()
+
+              clearSelection()
+            })
+
+            emit('query', data)
           })
-
-          emit('query', data)
-        })
-        .finally(() => {
-          loading.value = false
-        })
+          .finally(() => {
+            loading.value = false
+          })
+      })
     }
 
     //刷新
@@ -300,30 +387,34 @@ export default {
 
     //重置
     const reset = () => {
-      queryFormRef.value.resetFields()
+      queryFormRef.value.reset()
       refresh()
       emit('reset')
+    }
+
+    const openExport = () => {
+      showExportDialog.value = true
     }
 
     //删除
     const remove = () => {
       const { $t } = cit
       if (selection.value.length < 1) {
-        message.error($t('mkh.list.deleteNoData'))
+        message.error($t('mkh.select_delete_data'))
         return
       }
 
       message
-        .confirm($t('mkh.list.deleteMsg'), $t('mkh.delete.title'), {
-          confirmButtonText: $t('mkh.delete.ok'),
-          cancelButtonText: $t('mkh.delete.cancel'),
+        .confirm($t('mkh.delete_confirm_msg'), $t('mkh.delete_confirm_title'), {
+          confirmButtonText: $t('mkh.ok'),
+          cancelButtonText: $t('mkh.cancel'),
         })
         .then(() => {
-          globalLoading.open($t('mkh.delete.loading'))
+          globalLoading.open($t('mkh.delete_loading'))
           props
             .deleteMethod(selection.value.map(item => item.id))
             .then(() => {
-              message.success($t('mkh.delete.success'))
+              message.success($t('mkh.delete_success'))
               emit('success')
             })
             .catch(() => {
@@ -339,9 +430,25 @@ export default {
     //格式化
     const formatter = (row, col) => {
       const val = row[col.prop]
-      if (!col.formatter) return val
-
-      return col.formatter(row, col, val)
+      const ft = col.formatter
+      if (ft) {
+        const { formatters } = store.state.app.config.component.list
+        const t = typeof ft
+        if (t === 'function') {
+          return ft(row, col, val)
+        } else if (t === 'string') {
+          const func = formatters.get(ft)
+          if (func) {
+            return func(val)
+          }
+        } else if (t === 'object') {
+          const func = formatters.get(ft.type)
+          if (func) {
+            return func(val, ft.params)
+          }
+        }
+      }
+      return val
     }
 
     //处理选择事件
@@ -357,7 +464,7 @@ export default {
 
       // 将排序信息转化成后端的格式
       if (prop !== null) {
-        page.sort.push({ field: prop, order: order })
+        page.sort.push({ field: prop, order: order === 'ascending' ? 0 : 1 })
       }
 
       refresh()
@@ -386,11 +493,43 @@ export default {
     }
 
     if (props.queryOnCreated) {
-      query()
+      nextTick(() => {
+        query()
+      })
     }
+
+    const handleEnterQuery = e => {
+      if (e.keyCode === 13) {
+        query()
+      }
+    }
+
+    onMounted(() => {
+      nextTick(() => {
+        dom.on(queryFormRef.value.$el, 'keydown', handleEnterQuery)
+      })
+    })
+
+    onBeforeUnmount(() => {
+      dom.off(queryFormRef.value.$el, 'keydown', handleEnterQuery)
+    })
+
+    watch(
+      size_,
+      () => {
+        setTimeout(() => {
+          computeOperationWidth()
+        }, 1000)
+      },
+      {
+        immediate: true,
+      }
+    )
 
     return {
       isFullscreen,
+      pageSmall,
+      indexMethod_,
       openFullscreen,
       closeFullscreen,
       toggleFullscreen,
@@ -401,16 +540,20 @@ export default {
       selection,
       queryFormRef,
       tableRef,
-      operationRef,
+      foldQueryBar,
       loading,
       size_,
       class_,
       cols_,
+      tableCols,
+      expandCols,
+      isShowExpand,
       operationWidth_,
       pagination_,
       query,
       refresh,
       reset,
+      openExport,
       remove,
       formatter,
       showSetColDialog,

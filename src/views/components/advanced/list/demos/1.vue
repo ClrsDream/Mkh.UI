@@ -1,6 +1,6 @@
 <template>
   <div style="height: 400px">
-    <m-list title="诗词列表" :cols="cols" :query-model="model" :query-method="query">
+    <m-list title="诗词列表" :cols="cols" :query-model="model" :query-method="query" show-export>
       <template #querybar>
         <el-form-item label="名称：" prop="name">
           <el-input v-model="model.name" clearable></el-input>
@@ -17,6 +17,9 @@
             <el-option label="清代" value="清代"></el-option>
           </el-select>
         </el-form-item>
+      </template>
+      <template #footer>
+        <m-button type="success">搜索</m-button>
       </template>
     </m-list>
   </div>

@@ -1,32 +1,42 @@
 <template>
   <el-breadcrumb class="m-breadcrumb" separator="/">
-    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-    <template v-for="(bc, i) in list">
-      <el-breadcrumb-item v-if="bc.to" :key="i" :to="bc.to"> {{ bc.label }} </el-breadcrumb-item>
-      <el-breadcrumb-item v-else :key="i + 1"> {{ bc.label }} </el-breadcrumb-item>
+    <template v-for="(bc, i) in routeMenu.breadcrumb">
+      <el-breadcrumb-item v-if="bc.to" :key="i" :to="{ name: bc.to }"> {{ renderLabel(bc) }} </el-breadcrumb-item>
+      <el-breadcrumb-item v-else :key="i + 1"> {{ renderLabel(bc) }} </el-breadcrumb-item>
     </template>
   </el-breadcrumb>
 </template>
 <script>
-import { computed } from 'vue'
+import { getCurrentInstance, computed } from 'vue'
 import { useRoute } from 'vue-router'
+
 export default {
-  name: 'Breadcrumb',
   setup() {
+    const cit = getCurrentInstance().proxy
+    const { store } = mkh
     const route = useRoute()
 
-    const list = computed(() => {
-      const { breadcrumbs, title, icon } = route.meta
-      const last = { label: title, icon: icon }
-      if (!breadcrumbs) {
-        return [last]
+    const routeMenu = computed(() => {
+      let r = store.state.app.profile.routeMenus.find(m => m.routeName === route.name)
+      if (!r || route.name === 'home') {
+        return {
+          breadcrumb: [{ to: 'home', locales: { 'zh-cn': '首页', en: 'Home' } }],
+        }
       }
 
-      return [...breadcrumbs, last]
+      return r
     })
 
+    const renderLabel = bc => {
+      if (bc.locales) {
+        return bc.locales[cit.$i18n.locale] || 'Menu no name'
+      }
+      return 'Menu no name'
+    }
+
     return {
-      list,
+      routeMenu,
+      renderLabel,
     }
   },
 }
